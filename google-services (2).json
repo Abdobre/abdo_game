@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "674275099758",
+    "project_id": "abdo-c1d4e",
+    "storage_bucket": "abdo-c1d4e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:674275099758:android:cf00199e28ac27d31c127f",
+        "android_client_info": {
+          "package_name": "com.abdo.puzzle_game"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9RoIMEpAcEsbGBC7PJpVQixY-qYeyh20"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
