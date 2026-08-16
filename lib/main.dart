@@ -51,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     String roomId = (1000 + Random().nextInt(9000)).toString();
     
-    // الألغاز المتاحة
     List<Map<String, String>> puzzles = [
       {
         'question': 'ما هو الشيء الذي كلما أخذت منه كُبُر؟',
@@ -315,7 +314,6 @@ class _GameRoomScreenState extends State<GameRoomScreen> {
 
           return Column(
             children: [
-              // قسم اللغز والتلميح
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -373,7 +371,7 @@ class _GameRoomScreenState extends State<GameRoomScreen> {
                 )
               else
                 Padding(
-                  padding: const EdgeInsets.horizontal(12.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
                   child: Row(
                     children: [
                       Expanded(
@@ -400,7 +398,6 @@ class _GameRoomScreenState extends State<GameRoomScreen> {
 
               const Divider(height: 25),
 
-              // قسم الدردشة الحية
               const Text(
                 'الدردشة والتنسيق بين اللاعبين 💬',
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -443,8 +440,8 @@ class _GameRoomScreenState extends State<GameRoomScreen> {
                             ),
                             child: Column(
                               crossAxisAlignment: isMe
-                                  ? CrossAlignment.end
-                                  : CrossAlignment.start,
+                                  ? CrossAxisAlignment.end
+                                  : CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   msg['sender'] ?? '',
@@ -467,7 +464,6 @@ class _GameRoomScreenState extends State<GameRoomScreen> {
                 ),
               ),
 
-              // حقل إرسال الرسائل
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
