@@ -7,12 +7,13 @@ workflows:
       flutter: stable
       java: 17
     scripts:
-      - name: Set up local.properties
+      - name: Reconstruct Android Project Structure
         script: |
-          echo "flutter.sdk=$HOME/programs/flutter" > android/local.properties
+          # إعادة إنشاء هيكل أندرويد الحديث تلقائيًا
+          flutter create --platforms=android .
       - name: Get Flutter packages
         script: |
-          flutter packages pub get
+          flutter pub get
       - name: Build Android APK
         script: |
           flutter build apk --release
