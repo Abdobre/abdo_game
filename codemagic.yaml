@@ -1,21 +1,15 @@
 workflows:
-  flutter-android-build:
-    name: Flutter Android APK Build
-    max_build_duration: 30
+  android-workflow:
+    name: Android Build
+    max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
       flutter: stable
-      java: 17
     scripts:
-      - name: Reconstruct Android Project
+      - name: Set up Flutter
         script: |
-          flutter create --platforms=android .
-          mkdir -p android/app
-          cp google-services.json android/app/ 2>/dev/null || true
-      - name: Get Flutter packages
-        script: |
-          flutter pub get
-      - name: Build Android APK
+          flutter packages pub get
+      - name: Build APK
         script: |
           flutter build apk --release
     artifacts:
