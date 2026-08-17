@@ -8,7 +8,7 @@ void main() async {
   try {
     await Firebase.initializeApp();
   } catch (e) {
-    debugPrint("Firebase init error: $e");
+    debugPrint("Firebase initialization info: $e");
   }
   runApp(const MyApp());
 }
@@ -43,14 +43,18 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _roomIdController = TextEditingController();
   final TextEditingController _playerNameController = TextEditingController();
+  bool _isLoading = false;
 
   void _createRoom() async {
-    if (_playerNameController.text.trim().isEmpty) {
+    String name = _playerNameController.text.trim();
+    if (name.isEmpty) {
       _showSnackBar("يرجى إدخال اسمك أولاً");
       return;
     }
+
+    setState(() => _isLoading = true);
     String roomId = (1000 + Random().nextInt(9000)).toString();
-    
+
     List<Map<String, String>> puzzles = [
       {
         'question': 'ما هو الشيء الذي كلما أخذت منه كُبُر؟',
@@ -74,26 +78,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
     var selectedPuzzle = puzzles[Random().nextInt(puzzles.length)];
 
-    await FirebaseFirestore.instance.collection('rooms').doc(roomId).set({
-      'player1': _playerNameController.text.trim(),
-      'player2': null,
-      'status': 'waiting',
-      'puzzle': selectedPuzzle,
-      'solved': false,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    try {
+      await FirebaseFirestore.instance.collection('rooms').doc(roomId).set({
+        'player1': name,
+        'player2': null,
+        'status': 'waiting',
+        'puzzle': selectedPuzzle,
+        'solved': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      }).timeout(const Duration(seconds: 5));
 
-    if (!mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => GameRoomScreen(
-          roomId: roomId,
-          playerName: _playerNameController.text.trim(),
-          isPlayer1: true,
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GameRoomScreen(
+            roomId: roomId,
+            playerName: name,
+            isPlayer1: true,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showSnackBar("تعذر الاتصال بـ Firebase: تأكد من تنزيل google-services.json أو تفعيل شبكة الإنترنت");
+    }
   }
 
   void _joinRoom() async {
@@ -101,40 +113,55 @@ class _HomeScreenState extends State<HomeScreen> {
     String playerName = _playerNameController.text.trim();
 
     if (roomId.isEmpty || playerName.isEmpty) {
-      _showSnackBar("يرجى إدخال الاسم ورقم الغرفة");
+      _showSnackBar("يرجى إدخال الاسم ورقم الغرفة المكون من 4 أرقام");
       return;
     }
 
-    DocumentSnapshot roomDoc =
-        await FirebaseFirestore.instance.collection('rooms').doc(roomId).get();
+    setState(() => _isLoading = true);
 
-    if (!roomDoc.exists) {
-      _showSnackBar("الغرفة غير موجودة!");
-      return;
-    }
+    try {
+      DocumentSnapshot roomDoc = await FirebaseFirestore.instance
+          .collection('rooms')
+          .doc(roomId)
+          .get()
+          .timeout(const Duration(seconds: 5));
 
-    var data = roomDoc.data() as Map<String, dynamic>;
-    if (data['player2'] != null) {
-      _showSnackBar("الغرفة ممتلئة بالفعل!");
-      return;
-    }
+      if (!roomDoc.exists) {
+        setState(() => _isLoading = false);
+        _showSnackBar("الغرفة غير موجودة!");
+        return;
+      }
 
-    await FirebaseFirestore.instance.collection('rooms').doc(roomId).update({
-      'player2': playerName,
-      'status': 'playing',
-    });
+      var data = roomDoc.data() as Map<String, dynamic>;
+      if (data['player2'] != null) {
+        setState(() => _isLoading = false);
+        _showSnackBar("الغرفة ممتلئة بالفعل!");
+        return;
+      }
 
-    if (!mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => GameRoomScreen(
-          roomId: roomId,
-          playerName: playerName,
-          isPlayer1: false,
+      await FirebaseFirestore.instance.collection('rooms').doc(roomId).update({
+        'player2': playerName,
+        'status': 'playing',
+      });
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GameRoomScreen(
+            roomId: roomId,
+            playerName: playerName,
+            isPlayer1: false,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showSnackBar("خطأ في الاتصال بالغرفة");
+    }
   }
 
   void _showSnackBar(String text) {
@@ -148,11 +175,12 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('لعبة الألغاز التعاونية'),
         centerTitle: true,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const SizedBox(height: 20),
             const Icon(Icons.extension, size: 80, color: Colors.deepPurpleAccent),
             const SizedBox(height: 20),
             TextField(
@@ -164,15 +192,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: _createRoom,
-              icon: const Icon(Icons.add),
-              label: const Text('إنشاء غرفة جديدة'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-                backgroundColor: Colors.deepPurpleAccent,
-              ),
-            ),
+            _isLoading
+                ? const CircularProgressIndicator()
+                : ElevatedButton.icon(
+                    onPressed: _createRoom,
+                    icon: const Icon(Icons.add),
+                    label: const Text('إنشاء غرفة جديدة'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                      backgroundColor: Colors.deepPurpleAccent,
+                    ),
+                  ),
             const SizedBox(height: 30),
             const Row(
               children: [
@@ -196,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 15),
             ElevatedButton.icon(
-              onPressed: _joinRoom,
+              onPressed: _isLoading ? null : _joinRoom,
               icon: const Icon(Icons.login),
               label: const Text('الانضمام للغرفة'),
               style: ElevatedButton.styleFrom(
